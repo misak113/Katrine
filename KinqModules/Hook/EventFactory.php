@@ -44,6 +44,9 @@ class EventFactory extends Object {
      */
     public function addEventTypes(array $eventTypes) {
 	foreach ($eventTypes as $eventType => $eventParams) {
+	    if ((!is_array($eventParams) && !is_bool($eventParams))) {
+		throw new \InvalidArgumentException('Hodnoty seznamu událostí musí být seznam parametrů nebo false');
+	    }
 	    $this->eventTypes[$eventType] = $eventParams;
 	}
     }

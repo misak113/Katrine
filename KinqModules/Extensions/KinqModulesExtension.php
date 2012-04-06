@@ -63,7 +63,7 @@ class KinqModulesExtension extends \Nette\Config\CompilerExtension {
      * naloaduje konfigurační soubory pro jednotlivé moduly
      * @param array $modules názvy modulů
      */
-    protected function loadModuleConfigs($modules) {
+    protected function loadModuleConfigs(array $modules) {
 	$loader = $this->createLoader();
 	foreach ($modules as $module) {
 	    $path = $this->formatConfigFile($module);

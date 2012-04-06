@@ -55,7 +55,7 @@ class HookContainer extends Object implements IHookContainer {
      * Naloadování zadaných modulů
      * @param array $modules moduly k naloadování
      */
-    protected function loadModules($modules) {
+    protected function loadModules(array $modules) {
 	$moduleNames = array();
 	foreach ($modules as $moduleName) {
 	    $origModuleName = $moduleName;
@@ -140,6 +140,9 @@ class HookContainer extends Object implements IHookContainer {
      * @return array seznam spuštěných událostí
      */
     public function notify($eventType, array $args) {
+	if (!is_string($eventType)) {
+	    throw new \InvalidArgumentException('Zadaný typ události musí být string, bylo zadáno \''.  gettype($eventType).'\'');
+	}
 	$event = $this->getEventFactory()->notification($eventType, $args);
 	$name = $event->getEventType();
 	if (!isset($this->registry[$name])) {
