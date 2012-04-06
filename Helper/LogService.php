@@ -2,17 +2,28 @@
 
 namespace Katrine\Helper;
 
+/**
+ * Třída obstarávající debugování
+ */
 class LogService {
 
+    protected static $lastState = 1;
+
+    /**
+     * Statická metoda pro debugování v realtime nodejs laděnce
+     * @param mixed $data data pro debug
+     * @param int $priority priorita v zobrazování
+     * @param boolean $force debugovat i na produkční verzi
+     * @return boolean zda se debug zdařil
+     */
 	public static function realtimeDebug($data, $priority = 1, $force = false) {
-		static $last_state = 1;
 		if (!$force) {
 			if (!\Nette\Environment::getConfig('debugMode', false)) {
 				return false;
 			}
 		}
 
-		if ($last_state === 0) {
+		if (self::$last_state === 0) {
 			return false;
 		}
 
@@ -23,7 +34,7 @@ class LogService {
 
 		$a = @fopen($url, 'r');
 		if (!$a)
-			$last_state = 0;
+			self::$last_state = 0;
 		@fclose($a);
 		return true;
 	}

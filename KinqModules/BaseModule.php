@@ -2,29 +2,33 @@
 
 namespace Katrine\KinqModules;
 
-abstract class BaseModule extends \Nette\Object {
+use \Nette\Object
+, \Nette\Application\IRouter
+, \Nette\Security\IAuthorizator
+, Katrine\KinqModules\Hook\IHookContainer
+, \Nette\Application\Routers\Route;
+
+/**
+ * Abstraktní třída pro každý modul z kinqModules
+ */
+abstract class BaseModule extends Object {
 
 
 
 	const ROUTE_TRANSLATION = 'ROUTE_TRANSLATION';
 
-	private $namespace;
 	/**
-	 *
-	 * @var array Výčet možných eventů daného modulu
+	 * @var array Výčet možných povolených událostí daného modulu
 	 */
 	public static $events = array();
 
-	public static function setupRouter(\Nette\Application\IRouter $router) { }
+	public static function setupRouter(IRouter $router) { }
 
-	public static function setupPermission(\Nette\Security\IAuthorizator $permission) { }
+	public static function setupPermission(IAuthorizator $permission) { }
 
-	public static function setupHooks(Hook\IHookContainer $hook) {
+	public static function setupHooks(IHookContainer $hook) { }
 
-	}
-
-	public static function setupEvents(kinq\EventContainer $events) {
-	}
+	public static function setupEvents(array $events) { }
 
 
 	/**
@@ -42,12 +46,12 @@ abstract class BaseModule extends \Nette\Object {
 		//add lang default if omitted
 		if (is_array($metadata) && !isset($metadata['lang'])) {
 			$metadata['lang'] = array(
-			    \Nette\Application\Routers\Route::VALUE => 'cs',
-				'fixity' => \Nette\Application\Routers\Route::CONSTANT,
+			    Route::VALUE => 'cs',
+				'fixity' => Route::CONSTANT,
 			);
 		}
 
-		$new_route = new \Nette\Application\Routers\Route($mask, $metadata);
+		$new_route = new Route($mask, $metadata);
 
 		foreach($metadata as $part => $value) {
 			if (is_array($value) && in_array(self::ROUTE_TRANSLATION, $value))
@@ -61,8 +65,5 @@ abstract class BaseModule extends \Nette\Object {
 		return $route;
 	}
 
-	public function setNamespace($namespace) {
-		$this->namespace;
-	}
 }
 ?>

@@ -6,9 +6,9 @@ use Nette;
 interface IHookContainer
 {
 	
-	public function bind($eventType, $function, $args);
+	public function bind($event, $function, array $args);
 
-	public function unbind($object, $event = null);
+	public function unbind($event);
 	
-	public function notify($eventType, $args);
+	public function notify($eventType, array $args);
 }

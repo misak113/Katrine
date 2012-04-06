@@ -2,20 +2,29 @@
 
 namespace Katrine\KinqModules;
 use \Nette\InvalidStateException
-, \Nette\InvalidArgumentException;
+, \Nette\InvalidArgumentException
+, \Nette\Object;
 
-
-class Event extends \Nette\Object {
+/**
+ * Třída události, která obsahuje data o dané události z kinqModules Hook
+ */
+class Event extends Object {
 
     
     /**
-     *
      * @var \Nette\Callback
      */
     protected $callback = false;
     protected $eventType,  $options = false, $eventFactory;
 
-    public function __construct($eventType, $callbackFunction, $args, $eventFactory) {
+    /**
+     * Vytvoří událost
+     * @param string $eventType typ události
+     * @param mixed $callbackFunction callback funkce události
+     * @param array $args argumenty přidávané k volání callback funkce
+     * @param EventFactory $eventFactory továrna která vytvořila tento event
+     */
+    public function __construct($eventType, $callbackFunction, array $args, EventFactory $eventFactory) {
 	$this->eventFactory = $eventFactory;
 	$this->setEventType($eventType);
 	if ($callbackFunction !== false)
@@ -27,14 +36,28 @@ class Event extends \Nette\Object {
 
 
 
+    /**
+     * Vrací typ události
+     * @return string typ události
+     */
     public function getEventType() {
 	return $this->eventType;
     }
 
+    /**
+     * Vrací callback události
+     * @return \Nette\Callback callback události
+     */
     public function getCallback() {
 	return $this->callback;
     }
 
+    /**
+     * Vrací nastavení události
+     * Vrací jednu položku pokud je zadán název položky
+     * @param string $param název položky nastavení
+     * @return mixed vrací danné nastavení
+     */
     public function getOptions($param = false) {
 	if ($param === false) {
 	    return $this->options;
@@ -46,6 +69,11 @@ class Event extends \Nette\Object {
     }
 
 
+    /**
+     * Vrací validní argumenty pro zadanou notifikaci dle nastavení v EventFactory
+     * @param self $event notifikacekterá spouští danou událost
+     * @return array seznam parametrů ve správném pořadí, pokud jsou nastaveny požadované argumenty v configu
+     */
     public function getValidArgs(self $event) {
 	$allArgs = array_merge(
 			    $event->getOptions('args'),
@@ -82,7 +110,11 @@ class Event extends \Nette\Object {
     
     
 
-    public function setEventType($eventType) {
+    /**
+     * Nastaví typ události
+     * @param string $eventType typ události
+     */
+    protected function setEventType($eventType) {
 	if (!key_exists($eventType, $this->eventFactory->getEventTypes())) {
 	    throw new InvalidArgumentException("Event name '$eventType' is not supported event type");
 	}
@@ -94,7 +126,10 @@ class Event extends \Nette\Object {
 
 
 
-    
+    /**
+     * Nastaví callback funkci podle funkce, názvu funkce nebo callbacku
+     * @param string|\Nette\Callback|\Closure $function callback funkce
+     */
     protected function setCallbackFunction($function) {
 	
 	//$func = new \ReflectionFunction($callback->getNative());
@@ -102,9 +137,9 @@ class Event extends \Nette\Object {
 	//self::checkEventTypes($types, $event);
 	
 	if (is_string($function))
-	    $function = new \Nette\Callback($function);
+	    $function = callback($function);
 	if (is_callable($function))
-	    $function = new \Nette\Callback($function);
+	    $function = callback($function);
 
 	if (get_class($function) !== 'Nette\Callback')
 	    throw new InvalidArgumentException("Callback '$function' is not Nette\callback, string or function");
@@ -114,6 +149,10 @@ class Event extends \Nette\Object {
 
 	$this->callback = $function;
     }
+    /**
+     * Nastaví přídavné argumenty volané k funkci callbacku
+     * @param array $args argumenty k callback funkci
+     */
     protected function setOptionArgs(array $args = array()) {
 	$options = array(
 	    'caller' => null,
@@ -122,51 +161,6 @@ class Event extends \Nette\Object {
 	list(, $options['caller']) = debug_backtrace(false);
 	$this->options = $options;
     }
-
-    protected function checkEventTypes($types, $event) {
-	$eventTypes = $this->eventFactory->getEventTypes();
-	foreach ($eventTypes[$event] as $i => $arg) {
-	    if ($types[$i] != $arg && $types[$i] !== false) {
-		throw new InvalidArgumentException("Event want type '$arg' in parameter $i, but '".$types[$i]."' given");
-	    }
-	}
-    }
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-    /*protected static function getFunctionParametersTypesByArgs(array $paramArgs) {
-	$types = array();
-	foreach ($paramArgs as $arg) {
-	    $types[] = get_class($arg);
-	}
-	return $types;
-    }*/
-
-    /**
-     * Vrátí typy parametrů z parametrů funkce (Parameters Reflection)
-     *
-     * @param array $params parametry (Parameters Reflection)
-     * @return array typy parametrů
-     */
-    protected static function getFuncParams(array $params) {
-	foreach ($params as $param) {
-	    $paramTypes[] = $param->getName();
-	}
-	return $paramTypes;
-    }
-
 
 }
 

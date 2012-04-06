@@ -2,29 +2,15 @@
 
 namespace Katrine\Application;
 
+/**
+ * Továrna na presentery rozšiřující Nette továrnu
+ * přidává možnosti pro kinqModules
+ */
 class PresenterFactory extends \Nette\Application\PresenterFactory implements \Nette\Application\IPresenterFactory {
 
-	/** @var string */
-	protected $baseDir;
-
-	/** @var Nette\DI\IContainer */
-	protected $context;
-
-
 
 	/**
-	 * @param  string
-	 */
-	public function __construct($baseDir, \Nette\DI\IContainer $context)
-	{
-	    parent::__construct($baseDir, $context);
-		$this->baseDir = $baseDir;
-		$this->context = $context;
-	}
-
-
-
-	/**
+	 * Rozšíření pouze o možnost zadávat do route presenteru tečku "."
 	 * @param  string  presenter name
 	 * @return string  class name
 	 * @throws \Nette\Application\InvalidPresenterException
@@ -83,6 +69,7 @@ class PresenterFactory extends \Nette\Application\PresenterFactory implements \N
 
 	/**
 	 * Formats presenter class name from its name.
+	 * Pokud existuje module, předělává původní namespace Nette na kinqModules
 	 * @param  string
 	 * @return string
 	 */
@@ -109,8 +96,9 @@ class PresenterFactory extends \Nette\Application\PresenterFactory implements \N
 	    return array(false, false, false);
 	}
 
-		/**
+	/**
 	 * Formats presenter name from class name.
+	 * Získává zpětně z kinqModules namespace
 	 * @param  string
 	 * @return string
 	 */
@@ -128,6 +116,7 @@ class PresenterFactory extends \Nette\Application\PresenterFactory implements \N
 
 	/**
 	 * Formats presenter class file name.
+	 * Zjišťuje cestu k kinqModules presenterům
 	 * @param  string
 	 * @return string
 	 */

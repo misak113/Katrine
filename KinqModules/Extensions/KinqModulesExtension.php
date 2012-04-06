@@ -4,16 +4,27 @@ namespace Katrine\KinqModules\Extensions;
 
 use \Nette\Config;
 
+/**
+ * Třída rozšiřující Nette o kinqModules
+ */
 class KinqModulesExtension extends \Nette\Config\CompilerExtension {
 
+    /**
+     * @var array defaultní nastavení config
+     */
     public $defaults = array(
 	'kinqModules' => array(),
 	'kinqModulesEvents' => array(),
     );
 
     /** @var \Nette\DI\ContainerBuilder */
-    protected $container, $config;
+    protected $container;
+    /** @var array konfigurace */
+    protected $config;
 
+    /**
+     * Načtení konfigurace
+     */
     public function loadConfiguration() {
 	$this->container = $this->getContainerBuilder();
 	$this->config = $this->getConfig($this->defaults);
@@ -26,6 +37,9 @@ class KinqModulesExtension extends \Nette\Config\CompilerExtension {
 	//$this->setConfig($this->config);
     }
 
+    /**
+     * Vytvoření potřebných servisů
+     */
     protected function createHookService() {
 
 	$this->container
@@ -45,6 +59,10 @@ class KinqModulesExtension extends \Nette\Config\CompilerExtension {
 		->setFactory('Katrine\KinqModules\EventFactory');
     }
 
+    /**
+     * naloaduje konfigurační soubory pro jednotlivé moduly
+     * @param array $modules názvy modulů
+     */
     protected function loadModuleConfigs($modules) {
 	$loader = $this->createLoader();
 	foreach ($modules as $module) {
@@ -59,11 +77,19 @@ class KinqModulesExtension extends \Nette\Config\CompilerExtension {
 	}
     }
 
+    /**
+     * Zjišťuje adresu configu pro daný modul
+     * @param string $module název modulu
+     * @return string cesta ke konfiguračnímu souboru
+     */
     public function formatConfigFile($module) {
 	$path = APP_DIR . '/Modules/' . $module . '/config/config.neon';
 	return $path;
     }
 
+    /**
+     * Zamění původní presenter factory za factory pro kinqModules
+     */
     protected function createPresenterFactory() {
 	$this->container->removeDefinition('nette.presenterFactory');
 	$this->container->addDefinition($this->prefix('presenterFactory'))
@@ -72,6 +98,10 @@ class KinqModulesExtension extends \Nette\Config\CompilerExtension {
 		));
     }
 
+    /**
+     * Po zkompilování přidá danou službu do SystemContainer
+     * @param \Nette\Utils\PhpGenerator\ClassType $class
+     */
     public function afterCompile(\Nette\Utils\PhpGenerator\ClassType $class) {
 	$initialize = $class->methods['initialize'];
 
@@ -79,6 +109,7 @@ class KinqModulesExtension extends \Nette\Config\CompilerExtension {
     }
 
     /**
+     * Vytvoří loader pro loadování configů
      * @return Loader
      */
     protected function createLoader() {
