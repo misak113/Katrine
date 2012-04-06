@@ -2,6 +2,8 @@
 
 namespace Katrine\KinqModules\Extensions;
 
+use \Nette\Config;
+
 class KinqModulesExtension extends \Nette\Config\CompilerExtension {
 
     public $defaults = array(
@@ -10,20 +12,22 @@ class KinqModulesExtension extends \Nette\Config\CompilerExtension {
     );
 
     /** @var \Nette\DI\ContainerBuilder */
-    protected $container;
+    protected $container, $config;
 
     public function loadConfiguration() {
 	$this->container = $this->getContainerBuilder();
-	$config = $this->getConfig($this->defaults);
+	$this->config = $this->getConfig($this->defaults);
 
-	$this->createHookService($config);
+	$this->loadModuleConfigs($this->config['kinqModules']);
+
+	$this->createHookService();
 	$this->createPresenterFactory();
+
+	//$this->setConfig($this->config);
     }
 
+    protected function createHookService() {
 
-
-    protected function createHookService($config) {
-	
 	$this->container
 		->addDefinition($this->prefix('modulesHook'))
 		->setAutowired(true)
@@ -31,11 +35,33 @@ class KinqModulesExtension extends \Nette\Config\CompilerExtension {
 		->setShared(true)
 		->setFactory('Katrine\KinqModules\Hook\HookContainer', array(
 		    $this->container,
-		    $config['kinqModules'],
-		    $config['kinqModulesEvents']
+		    $this->config,
 		));
-	    //->addSetup('Katrine\KinqModules\Hook\HookContainer');
+	$this->container
+		->addDefinition($this->prefix('eventFactory'))
+		->setAutowired(true)
+		->addTag('eventFactory')
+		->setShared(true)
+		->setFactory('Katrine\KinqModules\EventFactory');
+    }
 
+    protected function loadModuleConfigs($modules) {
+	$loader = $this->createLoader();
+	foreach ($modules as $module) {
+	    $path = $this->formatConfigFile($module);
+	    try {
+		$conf = Config\Helpers::merge($loader->load($path, $this->container->parameters['environment']), $this->config);
+		$this->config = $conf;
+	    } catch (\Nette\FileNotFoundException $e) {
+		// v pohodě když není konfigurák
+		continue;
+	    }
+	}
+    }
+
+    public function formatConfigFile($module) {
+	$path = APP_DIR . '/Modules/' . $module . '/config/config.neon';
+	return $path;
     }
 
     protected function createPresenterFactory() {
@@ -50,6 +76,13 @@ class KinqModulesExtension extends \Nette\Config\CompilerExtension {
 	$initialize = $class->methods['initialize'];
 
 	$initialize->addBody('$this->getService(?);', array($this->prefix('modulesHook')));
+    }
+
+    /**
+     * @return Loader
+     */
+    protected function createLoader() {
+	return new Config\Loader();
     }
 
 }

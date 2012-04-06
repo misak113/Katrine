@@ -8,7 +8,7 @@ class Presenter extends \Nette\Application\UI\Presenter {
 
     public function __construct(\Nette\DI\IContainer $context) {
 	parent::__construct($context);
-	$this->modulesHook = $this->getService('kinqModulesExtension.modulesHook');
+	$this->modulesHook = $context->hasService('kinqModulesExtension.modulesHook') ?$context->getService('kinqModulesExtension.modulesHook') :null;
     }
 
     	/**

@@ -7,7 +7,7 @@ class LogService {
 	public static function realtimeDebug($data, $priority = 1, $force = false) {
 		static $last_state = 1;
 		if (!$force) {
-			if (!\Kate\Main\Loader::isDebugMode()) {
+			if (!\Nette\Environment::getConfig('debugMode', false)) {
 				return false;
 			}
 		}

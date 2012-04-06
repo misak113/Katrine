@@ -135,7 +135,7 @@ class PresenterFactory extends \Nette\Application\PresenterFactory implements \N
 	{
 		list($module, $presenterName, $parentModule) = self::parsePresenter($presenter);
 		if ($module) {
-		    $path = '/Modules/'.$parentModule.'.'.$module.'/Presenters/'.$presenterName.'Presenter.php';
+		    $path = '/Modules/'.$parentModule.'.'.$module.'/presenters/'.$presenterName.'Presenter.php';
 		    $pres = $this->baseDir . $path;
 		    return $pres;
 		}

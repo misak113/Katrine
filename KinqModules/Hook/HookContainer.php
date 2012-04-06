@@ -12,7 +12,8 @@ use Nette
 ,
     Nette\InvalidArgumentException
 ,
-    kinq;
+    kinq
+	,  \Katrine\KinqModules\Event;
 
 class HookContainer extends Nette\Object implements \Katrine\KinqModules\Hook\IHookContainer {
 
@@ -20,27 +21,30 @@ class HookContainer extends Nette\Object implements \Katrine\KinqModules\Hook\IH
 
     private $registry = array();
 
-    /** @var Nette\DI\IContainer */
+    
+    /** @var \SystemContainer */
     private $context;
-    protected $eventTypes = array();
-    protected $options = array(
-	'binder' => null,
-	'args' => null
-    );
+    protected $config;
 
-    public function __construct(Nette\DI\IContainer $context, array $modules, array $eventTypes) {
+    public function __construct(Nette\DI\IContainer $context, array $config) {
 	$this->context = $context;
-	$this->setEventTypes($eventTypes);
+	$this->config = $config;
+	$modules = $config['kinqModules'];
 	$this->loadModules($modules);
     }
 
     protected function loadModules($modules) {
+	$moduleNames = array();
 	foreach ($modules as $moduleName) {
-	    //$moduleNameParse = explode('.',$moduleName);
-	    $moduleName = self::MODULES_NAMESPACE.str_replace('.', '\\', $moduleName);//end($moduleNameParse);
+	    $origModuleName = $moduleName;
+	    $moduleName = self::MODULES_NAMESPACE.str_replace('.', '\\', $moduleName);
 	    if (!preg_match('~Module$~', $moduleName)) {
 		$moduleName = $moduleName . 'Module';
 	    }
+	    $this->addEventTypes($this->loadEventTypes($origModuleName, $moduleName::$events));
+	    $modulNames[] = $moduleName;
+	}
+	foreach ($modulNames as $moduleName) {
 	    try {
 		$moduleName::setupHooks($this);
 		$moduleName::setupRouter($this->context->getService('router'));
@@ -50,31 +54,17 @@ class HookContainer extends Nette\Object implements \Katrine\KinqModules\Hook\IH
 	}
     }
 
-    public function bind($event, $callback, $args = array()) {
-	if (!key_exists($event, $this->eventTypes)) {
-	    throw new InvalidArgumentException("Event name '$event' is not supported event type");
-	}
-	//$func = new \ReflectionFunction($callback->getNative());
-	//$types = self::getFunctionParametersTypesByParameters($func->getParameters());
-	//self::checkEventTypes($types, $event);
-	if (!isset($this->registry[$event]))
-	    $this->registry[$event] = self::buildStorage();
 
-	if (is_string($callback))
-	    $callback = new Callback($callback);
 
-	if (get_class($callback) !== 'Nette\Callback')
-	    throw new InvalidArgumentException("Callback '$callback' is not Nette\callback or string");
 
-	if (!$callback->isCallable())
-	    throw new InvalidStateException("Callback '$callback' is not callable.");
-
-	$options = array(
-	    'caller' => null,
-	    'args' => $args
-	);
-	list(, $options['caller']) = debug_backtrace(false);
-	$this->registry[$event]->attach($callback, $options);
+    
+    public function bind($eventType, $function, $args = array()) {
+	$event = $this->context->getService('kinqModulesExtension.eventFactory')->event($eventType, $function, $args);
+	$name = $event->getEventType();
+	if (!isset($this->registry[$name]))
+	    $this->registry[$name] = self::buildStorage();
+	$this->registry[$name]->attach($event);
+	return;
     }
 
     /**
@@ -93,15 +83,17 @@ class HookContainer extends Nette\Object implements \Katrine\KinqModules\Hook\IH
 	}
     }
 
-    public function notify($event, array $options = array()) {
-	//list(, $caller) = debug_backtrace(false);
-	$types = self::getFunctionParametersTypesByArgs($options);
-	self::checkEventTypes($types, $event);
-
-	if (!isset($this->registry[$event]))
+    public function notify($eventType, $args) {
+	$event = $this->context->getService('kinqModulesExtension.eventFactory')->notification($eventType, $args);
+	$name = $event->getEventType();
+	if (!isset($this->registry[$name]))
 	    return new SplObjectStorage();
-	foreach ($this->registry[$event] as $object) {
-	    call_user_func_array($object, $options);
+	foreach ($this->registry[$name] as  $notifiedEvent) {
+	    $args = $notifiedEvent->getValidArgs($event);
+	    call_user_func_array(
+		    $notifiedEvent->getCallback(),
+		    $args
+	    );
 	}
     }
 
@@ -111,36 +103,27 @@ class HookContainer extends Nette\Object implements \Katrine\KinqModules\Hook\IH
 
 
 
-    protected function checkEventTypes($types, $event) {
-	foreach ($this->eventTypes[$event] as $i => $arg) {
-	    if ($types[$i] != $arg && $types[$i] !== false) {
-		throw new InvalidArgumentException("Event want type '$arg' in parameter $i, but '".$types[$i]."' given");
-	    }
+    protected function loadEventTypes($origModuleName, $eventTypes) {
+	$eventTypesParams = array();
+	$configEventTypes = isset($this->config['kinqModules'.$origModuleName]['eventTypes']) ?$this->config['kinqModules'.$origModuleName]['eventTypes'] :array();
+	foreach ($eventTypes as $type) {
+	    $eventTypesParams[$type] = isset($configEventTypes[$type]) ?array(
+		'argTypes' => $configEventTypes[$type],
+	    ) :false;
 	}
+	return $eventTypesParams;
     }
-
 
     protected static function buildStorage() {
 	return new SplObjectStorage();
     }
 
-    protected function setEventTypes(array $eventTypes) {
-	$this->eventTypes = $eventTypes;
+    protected function addEventTypes($eventTypes) {
+	if (!is_array($eventTypes)) {
+	    $eventTypes = array();
+	}
+	$this->context->getService('kinqModulesExtension.eventFactory')->addEventTypes($eventTypes);
     }
 
-    protected static function getFunctionParametersTypesByArgs($paramArgs) {
-	$types = array();
-	foreach ($paramArgs as $arg) {
-	    $types[] = get_class($arg);
-	}
-	return $types;
-    }
-
-    protected static function getFunctionParametersTypesByParameters($params) {
-	foreach ($params as $param) {
-	    $paramTypes[] = $param->getName();
-	}
-	return $paramTypes;
-    }
 
 }

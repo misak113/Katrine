@@ -9,6 +9,11 @@ abstract class BaseModule extends \Nette\Object {
 	const ROUTE_TRANSLATION = 'ROUTE_TRANSLATION';
 
 	private $namespace;
+	/**
+	 *
+	 * @var array Výčet možných eventů daného modulu
+	 */
+	public static $events = array();
 
 	public static function setupRouter(\Nette\Application\IRouter $router) { }
 
@@ -18,9 +23,7 @@ abstract class BaseModule extends \Nette\Object {
 
 	}
 
-	public function setupEvents(kinq\EventContainer $events) {
-		//
-		//$events[] = new kinq\Event($this, 'order.createPayment', array('@Nette\Application\Application'));
+	public static function setupEvents(kinq\EventContainer $events) {
 	}
 
 
